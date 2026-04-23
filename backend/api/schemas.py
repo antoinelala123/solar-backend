@@ -89,6 +89,39 @@ class ProjectCreate(BaseModel):
         return v
 
 
+# ── Dimensioning ───────────────────────────────────────────────────────────────
+
+class DimensioningParams(BaseModel):
+    panel_peak_power_wp: float     # Puissance crête d'un panneau (Wc)
+    battery_capacity_wh: float     # Capacité d'une batterie (Wh)
+    battery_dod: float             # Depth of discharge 0.0 → 1.0
+    system_efficiency: float        # Rendement global de l'installation 0.0 → 1.0
+
+    @field_validator("panel_peak_power_wp", "battery_capacity_wh")
+    @classmethod
+    def must_be_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("doit être strictement positif")
+        return v
+
+    @field_validator("battery_dod", "system_efficiency")
+    @classmethod
+    def dod_in_range(cls, v: float) -> float:
+        if not 0.0 < v <= 1.0:
+            raise ValueError("doit être entre 0.0 (exclu) et 1.0")
+        return v
+
+
+class DimensioningResult(BaseModel):
+    recommended_panels: int
+    recommended_batteries: int
+    daily_load_wh: float           # Consommation journalière totale
+    daily_solar_wh: float          # Production solaire journalière avec le dimensionnement
+    energy_wasted_wh_per_day: float  # Énergie perdue (batterie pleine) en régime établi
+    energy_deficit_wh_per_day: float # Énergie manquante (batterie vide) en régime établi
+    is_oversized: bool             # Vrai si > 15% de la production est perdue
+
+
 class ProjectRead(BaseModel):
     id: UUID4
     name: str

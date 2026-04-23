@@ -1,12 +1,36 @@
+from dataclasses import dataclass
 from uuid import UUID
 
 from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
-from app.domain.models import Project, Charge
-from app.infrastructure.database import SessionLocal
-from app.infrastructure.pvgis import fetch_hourly_irradiance, PVGISError
-from app.api.schemas import ProjectCreate, ChargeCreate
+
+@dataclass
+class ProjectData:
+    name: str
+    gps_lat: float
+    gps_lon: float
+
+
+@dataclass
+class ChargeData:
+    name: str
+    max_power_w: float
+    real_usage_rate: float
+    hourly_slots: list[dict]
+
+
+@dataclass
+class DimensioningParams:
+    panel_peak_power_wp: float
+    battery_capacity_wh: float
+    battery_dod: float
+    system_efficiency: float
+
+from backend.domain.models import Project, Charge
+from backend.infrastructure.database import SessionLocal
+from backend.infrastructure.pvgis import fetch_hourly_irradiance, PVGISError
+from backend.domain.calculator import compute_dimensioning
 
 
 # ── Background task ────────────────────────────────────────────────────────────
@@ -32,7 +56,7 @@ def _update_irradiance(project_id: UUID, lat: float, lon: float) -> None:
 # ── Projects ───────────────────────────────────────────────────────────────────
 
 def create_project(
-    db: Session, data: ProjectCreate, background_tasks: BackgroundTasks
+    db: Session, data: ProjectData, background_tasks: BackgroundTasks
 ) -> Project:
     project = Project(name=data.name, gps_lat=data.gps_lat, gps_lon=data.gps_lon)
     db.add(project)
@@ -59,9 +83,26 @@ def delete_project(db: Session, project_id: UUID) -> bool:
     return True
 
 
+def get_dimensioning(
+    db: Session, project_id: UUID, params: DimensioningParams
+) -> dict | None:
+    project = db.get(Project, project_id)
+    if not project:
+        return None
+    if not project.hourly_irradiance:
+        raise ValueError("L'irradiance du projet n'est pas encore disponible (PVGIS en cours)")
+    return compute_dimensioning(
+        project.charges,
+        project.hourly_irradiance,
+        params.panel_peak_power_wp,
+        params.battery_capacity_wh,
+        params.battery_dod,
+        params.system_efficiency,
+    )
+
 # ── Charges ────────────────────────────────────────────────────────────────────
 
-def create_charge(db: Session, project_id: UUID, data: ChargeCreate) -> Charge | None:
+def create_charge(db: Session, project_id: UUID, data: ChargeData) -> Charge | None:
     if not db.get(Project, project_id):
         return None
     charge = Charge(
@@ -69,7 +110,7 @@ def create_charge(db: Session, project_id: UUID, data: ChargeCreate) -> Charge |
         name=data.name,
         max_power_w=data.max_power_w,
         real_usage_rate=data.real_usage_rate,
-        hourly_slots=[slot.model_dump() for slot in data.hourly_slots],
+        hourly_slots=data.hourly_slots,
     )
     db.add(charge)
     db.commit()
@@ -81,14 +122,14 @@ def get_charge(db: Session, charge_id: UUID) -> Charge | None:
     return db.get(Charge, charge_id)
 
 
-def update_charge(db: Session, charge_id: UUID, data: ChargeCreate) -> Charge | None:
-    charge = db.get(Charge, charge_id)
+def update_charge(db: Session, charge_id: UUID, data: ChargeData) -> Charge | None:
+    charge = db.get(Charge, charge_id, with_for_update=True)
     if not charge:
         return None
     charge.name = data.name
     charge.max_power_w = data.max_power_w
     charge.real_usage_rate = data.real_usage_rate
-    charge.hourly_slots = [slot.model_dump() for slot in data.hourly_slots]
+    charge.hourly_slots = data.hourly_slots
     db.commit()
     db.refresh(charge)
     return charge

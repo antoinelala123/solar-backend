@@ -1,0 +1,56 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+
+  h1 { margin: 0; }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.project-card {
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+
+  &:hover { box-shadow: 0 4px 20px rgba(123, 31, 162, 0.18); }
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  &--ready {
+    background: #f3e5f5;
+    color: #6a1b9a;
+  }
+
+  &--pending {
+    background: #fce4ec;
+    color: #880e4f;
+  }
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 64px 0;
+  color: #ba68c8;
+
+  mat-icon { font-size: 48px; width: 48px; height: 48px; }
+}

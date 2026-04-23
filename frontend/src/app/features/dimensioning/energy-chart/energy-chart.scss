@@ -1,0 +1,141 @@
+$bar-h: 220px;
+$lbl-h: 24px;
+
+.chart {
+  width: 100%;
+}
+
+.chart-inner {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+/* ── Axe Y ───────────────────────────────────────────── */
+
+.y-axis {
+  position: relative;
+  width: 52px;
+  height: $bar-h;
+  margin-bottom: $lbl-h;
+  flex-shrink: 0;
+}
+
+.y-label {
+  position: absolute;
+  right: 6px;
+  font-size: 0.6rem;
+  color: #6a1b9a;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateY(50%);
+}
+
+/* ── Corps ───────────────────────────────────────────── */
+
+.chart-body {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.grid-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: $lbl-h;
+  height: $bar-h;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid #e1bee7;
+}
+
+/* ── Barres ──────────────────────────────────────────── */
+
+.bars {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 3px;
+  height: $bar-h + $lbl-h;
+  border-bottom: 2px solid #9c27b0;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.bar-area {
+  height: $bar-h;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+  transition: height 0.3s ease;
+}
+
+.sect {
+  width: 100%;
+  min-height: 0;
+  transition: height 0.3s ease;
+
+  &--solar   { background: #f9a825; }
+  &--battery { background: #388e3c; }
+  &--deficit { background: #c62828; }
+}
+
+.hour-label {
+  font-size: 0.65rem;
+  color: #6a1b9a;
+  font-weight: 500;
+  padding: 4px 0;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ── Légende ─────────────────────────────────────────── */
+
+.legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #6a1b9a;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+
+  &--solar   { background: #f9a825; }
+  &--battery { background: #388e3c; }
+  &--deficit { background: #c62828; }
+}

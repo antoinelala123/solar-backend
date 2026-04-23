@@ -1,0 +1,136 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 32px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h1 { margin: 0; font-size: 1.4rem; }
+}
+
+/* ── Formulaire paramètres ───────────────────────────── */
+
+.params-card {
+  mat-card-content { padding-bottom: 8px !important; }
+}
+
+.params-form {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+
+  mat-form-field { flex: 1; min-width: 180px; }
+}
+
+.spinner-inline {
+  display: flex;
+  align-items: center;
+  padding-bottom: 20px;
+}
+
+/* ── Alertes ─────────────────────────────────────────── */
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  flex: 1;
+
+  &--warning { background: #fce4ec; color: #880e4f; border: 1px solid #f48fb1; }
+  &--info    { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; }
+}
+
+/* ── Résultats ───────────────────────────────────────── */
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px !important;
+  text-align: center;
+
+  mat-icon { font-size: 26px; width: 26px; height: 26px; }
+
+  &--alert { border: 1px solid #f48fb1; background: #fff0f5; }
+}
+
+.result-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #4a148c;
+  line-height: 1.2;
+}
+
+.result-label {
+  font-size: 0.72rem;
+  color: #ba68c8;
+}
+
+.result-optimal {
+  font-size: 0.68rem;
+  color: #7b1fa2;
+  margin-top: 2px;
+}
+
+/* Input intégré dans la card (panneaux / batteries) */
+.override-input {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #4a148c;
+  border: none;
+  border-bottom: 2px solid #9c27b0;
+  background: transparent;
+  text-align: center;
+  width: 72px;
+  outline: none;
+  padding: 2px 0;
+  line-height: 1.2;
+
+  &:focus { border-bottom-color: #6a1b9a; }
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  -moz-appearance: textfield;
+}
+
+/* ── Bouton optimal + alerte surdimensionnement ───────── */
+
+.optimal-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  button { white-space: nowrap; }
+}
+
+/* ── Graphe ──────────────────────────────────────────── */
+
+.chart-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6a1b9a;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+}

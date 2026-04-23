@@ -1,0 +1,54 @@
+<div class="header">
+  <h1>Mes projets</h1>
+  <button mat-raised-button color="primary" (click)="openCreate()">
+    <mat-icon>add</mat-icon>
+    Nouveau projet
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="center">
+    <mat-spinner diameter="48" />
+  </div>
+} @else if (projects().length === 0) {
+  <div class="empty">
+    <mat-icon>solar_power</mat-icon>
+    <p>Aucun projet. Créez-en un pour commencer.</p>
+  </div>
+} @else {
+  <div class="grid">
+    @for (project of projects(); track project.id) {
+      <mat-card (click)="navigate(project.id)" class="project-card">
+        <mat-card-header>
+          <mat-card-title>{{ project.name }}</mat-card-title>
+          <mat-card-subtitle>{{ project.gps_lat }}, {{ project.gps_lon }}</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <span
+            class="badge"
+            [class.badge--ready]="project.hourly_irradiance !== null"
+            [class.badge--pending]="project.hourly_irradiance === null"
+          >
+            @if (project.hourly_irradiance !== null) {
+              Irradiance disponible
+            } @else {
+              Récupération en cours…
+            }
+          </span>
+        </mat-card-content>
+
+        <mat-card-actions align="end">
+          <button
+            mat-icon-button
+            color="warn"
+            (click)="delete($event, project)"
+            aria-label="Supprimer le projet"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+}

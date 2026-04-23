@@ -1,0 +1,163 @@
+$bar-h: 220px;
+$btn-h: 28px;
+
+.chart {
+  width: 100%;
+}
+
+.chart-inner {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+/* ── Axe Y ───────────────────────────────────────────── */
+
+.y-axis {
+  position: relative;
+  width: 46px;
+  height: $bar-h;
+  margin-bottom: $btn-h;
+  flex-shrink: 0;
+}
+
+.y-label {
+  position: absolute;
+  right: 6px;
+  font-size: 0.6rem;
+  color: #6a1b9a;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateY(50%);
+}
+
+/* ── Corps du graphe ─────────────────────────────────── */
+
+.chart-body {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.grid-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: $btn-h;
+  height: $bar-h;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid #e1bee7;
+}
+
+/* ── Barres ──────────────────────────────────────────── */
+
+.bars {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 3px;
+  height: $bar-h + $btn-h;
+  border-bottom: 2px solid #9c27b0;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.bar-area {
+  height: $bar-h;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar {
+  width: 100%;
+  min-height: 0;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.25s ease;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+  background: #f3e5f5;
+
+  &--active {
+    background: #7b1fa2;
+  }
+
+  &--custom {
+    background: #e91e63;
+  }
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      filter: brightness(0.88);
+    }
+  }
+}
+
+.bar-value {
+  font-size: 0.55rem;
+  color: white;
+  font-weight: 700;
+  padding-top: 3px;
+  user-select: none;
+  line-height: 1;
+}
+
+.hour-btn {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #e1bee7;
+  background: white;
+  font-size: 0.65rem;
+  color: #6a1b9a;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  border-radius: 3px;
+  margin-top: 3px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1;
+
+  &:hover:not(:disabled) {
+    background: #f3e5f5;
+    border-color: #7b1fa2;
+    color: #7b1fa2;
+  }
+
+  &--on {
+    background: #7b1fa2;
+    border-color: #7b1fa2;
+    color: white;
+    font-weight: 700;
+  }
+
+  &--custom {
+    background: #e91e63;
+    border-color: #e91e63;
+    color: white;
+  }
+
+  &:disabled {
+    cursor: default;
+    color: #ce93d8;
+    border-color: #f3e5f5;
+  }
+}

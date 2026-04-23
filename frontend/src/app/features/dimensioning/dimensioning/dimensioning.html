@@ -1,0 +1,147 @@
+@if (loadingProject()) {
+  <div class="center"><mat-spinner diameter="48" /></div>
+} @else if (project(); as p) {
+  <div class="page">
+
+    <!-- En-tête -->
+    <div class="page-header">
+      <a mat-icon-button [routerLink]="['/projects', p.id]" aria-label="Retour au projet">
+        <mat-icon>arrow_back</mat-icon>
+      </a>
+      <h1>Dimensionnement — {{ p.name }}</h1>
+    </div>
+
+    <!-- Paramètres physiques -->
+    <mat-card class="params-card">
+      <mat-card-content>
+        <form [formGroup]="form" class="params-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Puissance crête panneau (Wc)</mat-label>
+            <input matInput type="number" formControlName="panel_peak_power_wp" min="1" />
+            <mat-hint>Ex : 400 Wc</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Capacité batterie (Wh)</mat-label>
+            <input matInput type="number" formControlName="battery_capacity_wh" min="1" />
+            <mat-hint>Ex : 200 Wh</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>DOD — profondeur de décharge</mat-label>
+            <input matInput type="number" formControlName="battery_dod" min="0.01" max="1" step="0.05" />
+            <mat-hint>Entre 0 et 1 · Ex : 0.8 (80%)</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Efficacité de l'installation</mat-label>
+            <input matInput type="number" formControlName="system_efficiency" min="0.01" max="1" step="0.05" />
+            <mat-hint>Entre 0 et 1 · Ex : 0.8 (80 %)</mat-hint>
+          </mat-form-field>
+
+          @if (loadingResult()) {
+            <div class="spinner-inline"><mat-spinner diameter="28" /></div>
+          }
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Messages d'état -->
+    @if (irradianceNotReady() || !p.hourly_irradiance) {
+      <div class="alert alert--warning">
+        <mat-icon>schedule</mat-icon>
+        L'irradiance PVGIS est encore en cours de récupération. Réessayez dans quelques secondes.
+      </div>
+    }
+
+    <!-- Résultats + overrides intégrés -->
+    @if (result(); as r) {
+      <div class="results-grid">
+
+        <!-- Panneaux — input intégré -->
+        <mat-card class="result-card">
+          <mat-icon color="primary">solar_power</mat-icon>
+          <input
+            type="number"
+            class="override-input"
+            [formControl]="overridePanels"
+            min="0"
+            aria-label="Nombre de panneaux"
+          />
+          <span class="result-label">panneaux</span>
+          @if (!isOptimal()) {
+            <span class="result-optimal">Optimal : {{ r.recommended_panels }}</span>
+          }
+        </mat-card>
+
+        <!-- Batteries — input intégré -->
+        <mat-card class="result-card">
+          <mat-icon color="primary">battery_charging_full</mat-icon>
+          <input
+            type="number"
+            class="override-input"
+            [formControl]="overrideBatteries"
+            min="0"
+            aria-label="Nombre de batteries"
+          />
+          <span class="result-label">batteries</span>
+          @if (!isOptimal()) {
+            <span class="result-optimal">Optimal : {{ r.recommended_batteries }}</span>
+          }
+        </mat-card>
+
+        <!-- Stats dynamiques -->
+        <mat-card class="result-card">
+          <mat-icon>bolt</mat-icon>
+          <span class="result-value">{{ stats().daily_load_wh | number:'1.0-0' }} Wh</span>
+          <span class="result-label">charge journalière</span>
+        </mat-card>
+
+        <mat-card class="result-card">
+          <mat-icon style="color: #f9a825">wb_sunny</mat-icon>
+          <span class="result-value">{{ stats().daily_solar_wh | number:'1.0-0' }} Wh</span>
+          <span class="result-label">production solaire</span>
+        </mat-card>
+
+        <mat-card class="result-card">
+          <mat-icon style="color: #757575">energy_savings_leaf</mat-icon>
+          <span class="result-value">{{ stats().energy_wasted_wh_per_day | number:'1.0-0' }} Wh</span>
+          <span class="result-label">énergie perdue / jour</span>
+        </mat-card>
+
+        <mat-card class="result-card" [class.result-card--alert]="stats().energy_deficit_wh_per_day > 0">
+          <mat-icon [style.color]="stats().energy_deficit_wh_per_day > 0 ? '#c62828' : '#388e3c'">
+            {{ stats().energy_deficit_wh_per_day > 0 ? 'warning' : 'check_circle' }}
+          </mat-icon>
+          <span class="result-value">{{ stats().energy_deficit_wh_per_day | number:'1.0-0' }} Wh</span>
+          <span class="result-label">déficit / jour</span>
+        </mat-card>
+      </div>
+
+      <div class="optimal-row">
+        @if (stats().is_oversized) {
+          <div class="alert alert--info">
+            <mat-icon>info</mat-icon>
+            Installation <strong>surdimensionnée</strong> — les batteries restent proches de 100 % la plupart du temps.
+          </div>
+        }
+        <button
+          mat-raised-button
+          color="accent"
+          (click)="resetToOptimal()"
+          [disabled]="isOptimal()"
+          aria-label="Revenir au dimensionnement optimal"
+        >
+          <mat-icon>auto_fix_high</mat-icon>
+          Dimensionnement optimal
+        </button>
+      </div>
+
+      <!-- Graphe -->
+      @if (breakdown().length > 0) {
+        <h2 class="chart-title">Répartition de l'énergie par heure</h2>
+        <app-energy-chart [breakdown]="breakdown()" />
+      }
+    }
+  </div>
+}

@@ -1,0 +1,122 @@
+@if (loading()) {
+  <div class="center"><mat-spinner diameter="48" /></div>
+} @else if (project(); as p) {
+  <div class="page">
+
+    <!-- En-tête -->
+    <div class="page-header">
+      <a mat-icon-button routerLink="/projects" aria-label="Retour à la liste">
+        <mat-icon>arrow_back</mat-icon>
+      </a>
+      <div class="title-block">
+        <h1>{{ p.name }}</h1>
+        <span class="coords">{{ p.gps_lat }}, {{ p.gps_lon }}</span>
+      </div>
+      <span class="spacer"></span>
+      <span
+        class="badge"
+        [class.badge--ready]="p.hourly_irradiance !== null"
+        [class.badge--pending]="p.hourly_irradiance === null"
+        [matTooltip]="p.hourly_irradiance ? 'Données PVGIS disponibles' : 'Récupération en cours (10–30 s)'"
+      >
+        {{ p.hourly_irradiance !== null ? 'Irradiance disponible' : 'Irradiance en cours…' }}
+      </span>
+      <a mat-raised-button color="accent" [routerLink]="['/projects', p.id, 'dimensioning']">
+        <mat-icon>calculate</mat-icon>
+        Dimensionner
+      </a>
+    </div>
+
+    <!-- Corps -->
+    <div class="body">
+
+      <!-- Barre latérale -->
+      <aside class="sidebar">
+        <button mat-stroked-button class="add-btn" (click)="openCreateCharge()">
+          <mat-icon>add</mat-icon>
+          Nouvelle charge
+        </button>
+
+        <!-- Récapitulatif total -->
+        <button
+          class="sidebar-item"
+          [class.sidebar-item--active]="selectedId() === 'total'"
+          (click)="selectedId.set('total')"
+          aria-label="Vue totale de toutes les charges"
+        >
+          <mat-icon aria-hidden="true">bar_chart</mat-icon>
+          <div class="sidebar-item-info">
+            <span class="sidebar-item-name">Total</span>
+            <span class="sidebar-item-sub">Σ toutes les charges</span>
+          </div>
+        </button>
+
+        <!-- Charges -->
+        @for (charge of p.charges; track charge.id) {
+          <div class="sidebar-item-row">
+            <button
+              class="sidebar-item sidebar-item--grow"
+              [class.sidebar-item--active]="selectedId() === charge.id"
+              (click)="selectedId.set(charge.id)"
+              [attr.aria-label]="charge.name + ', ' + charge.max_power_w + ' W'"
+            >
+              <mat-icon aria-hidden="true">electrical_services</mat-icon>
+              <div class="sidebar-item-info">
+                <span class="sidebar-item-name">{{ charge.name }}</span>
+                <span class="sidebar-item-sub">
+                  {{ charge.max_power_w | number:'1.0-0' }} W · {{ charge.real_usage_rate * 100 | number:'1.0-0' }} %
+                </span>
+              </div>
+            </button>
+            <button
+              mat-icon-button
+              color="warn"
+              (click)="deleteCharge(charge)"
+              [attr.aria-label]="'Supprimer ' + charge.name"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        }
+
+        @if (p.charges.length === 0) {
+          <p class="no-charges">Aucune charge. Ajoutez-en une.</p>
+        }
+      </aside>
+
+      <!-- Zone graphe -->
+      <main class="chart-area">
+        @if (selectedId() === 'total') {
+          <h2>Consommation totale</h2>
+          <p class="chart-hint">Vue combinée — lecture seule</p>
+          @if (p.charges.length > 0 && totalMaxW() > 0) {
+            <app-hourly-chart
+              [slots]="totalSlots()"
+              [maxPowerW]="totalMaxW()"
+              [readOnly]="true"
+            />
+          } @else {
+            <p class="empty-hint">Ajoutez des charges pour voir le graphe total.</p>
+          }
+        } @else if (selectedCharge(); as charge) {
+          <div class="chart-header">
+            <h2>{{ charge.name }}</h2>
+            @if (saving()) {
+              <mat-spinner diameter="20" />
+            }
+          </div>
+          <p class="chart-hint">
+            Cliquez sur un <strong>chiffre</strong> pour activer/désactiver le créneau ·
+            Cliquez sur une <strong>barre</strong> pour entrer une valeur personnalisée
+          </p>
+          <app-hourly-chart
+            [slots]="charge.hourly_slots"
+            [maxPowerW]="charge.max_power_w"
+            [realUsageRate]="charge.real_usage_rate"
+            (slotChange)="onSlotChange($event)"
+          />
+        }
+      </main>
+    </div>
+  </div>
+}

@@ -1,0 +1,60 @@
+<div class="chart">
+  <div class="chart-inner">
+
+    <!-- Axe Y -->
+    <div class="y-axis" aria-hidden="true">
+      @for (tick of yTicks(); track tick) {
+        <div class="y-label" [style.bottom.%]="tickPercent(tick)">
+          {{ tick | number:'1.0-0' }} Wh
+        </div>
+      }
+    </div>
+
+    <!-- Corps -->
+    <div class="chart-body">
+
+      <!-- Traits horizontaux -->
+      <div class="grid-overlay" aria-hidden="true">
+        @for (tick of yTicks(); track tick) {
+          <div class="grid-line" [style.bottom.%]="tickPercent(tick)"></div>
+        }
+      </div>
+
+      <!-- Barres empilées -->
+      <div class="bars">
+        @for (b of breakdown(); track b.hour) {
+          <div class="bar-col">
+            <div class="bar-area">
+              <div
+                class="bar-stack"
+                [style.height.%]="barHeight(b)"
+                [attr.aria-label]="'Heure ' + b.hour + ': ' + (b.load_wh | number:'1.0-0') + ' Wh'"
+              >
+                <!-- Déficit en haut (rouge) -->
+                <div class="sect sect--deficit" [style.height.%]="deficitPct(b)"></div>
+                <!-- Batterie au milieu (vert) -->
+                <div class="sect sect--battery" [style.height.%]="batteryPct(b)"></div>
+                <!-- Solaire en bas (jaune) -->
+                <div class="sect sect--solar" [style.height.%]="solarPct(b)"></div>
+              </div>
+            </div>
+            <span class="hour-label">{{ b.hour }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Légende -->
+  <div class="legend" aria-label="Légende">
+    <span class="legend-item">
+      <span class="legend-dot legend-dot--solar"></span>Solaire
+    </span>
+    <span class="legend-item">
+      <span class="legend-dot legend-dot--battery"></span>Batterie
+    </span>
+    <span class="legend-item">
+      <span class="legend-dot legend-dot--deficit"></span>Déficit
+    </span>
+  </div>
+</div>

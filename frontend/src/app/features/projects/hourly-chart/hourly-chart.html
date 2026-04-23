@@ -1,0 +1,61 @@
+<div class="chart" role="img" aria-label="Consommation horaire sur 24h">
+  <div class="chart-inner">
+
+    <!-- Axe Y -->
+    <div class="y-axis" aria-hidden="true">
+      @for (tick of yTicks(); track tick) {
+        <div class="y-label" [style.bottom.%]="tickPercent(tick)">
+          {{ tick | number:'1.0-0' }}W
+        </div>
+      }
+    </div>
+
+    <!-- Corps : grille + barres -->
+    <div class="chart-body">
+
+      <!-- Traits horizontaux -->
+      <div class="grid-overlay" aria-hidden="true">
+        @for (tick of yTicks(); track tick) {
+          <div class="grid-line" [style.bottom.%]="tickPercent(tick)"></div>
+        }
+      </div>
+
+      <!-- Barres -->
+      <div class="bars">
+        @for (slot of slots(); track slot.hour) {
+          <div class="bar-col">
+            <div class="bar-area">
+              <div
+                class="bar"
+                [class.bar--active]="slot.state === 'ACTIVE'"
+                [class.bar--custom]="slot.state === 'CUSTOM'"
+                [class.bar--clickable]="!readOnly() && slot.state !== 'INACTIVE'"
+                [style.height.%]="barHeightPercent(slot)"
+                (click)="onBarClick(slot)"
+                [attr.role]="!readOnly() && slot.state !== 'INACTIVE' ? 'button' : null"
+                [attr.aria-label]="slot.state !== 'INACTIVE' ? 'Heure ' + slot.hour + ': ' + (valueAt(slot) | number:'1.0-0') + ' W' : null"
+              >
+                @if (slot.state !== 'INACTIVE' && barHeightPercent(slot) > 20) {
+                  <span class="bar-value">{{ valueAt(slot) | number:'1.0-0' }}</span>
+                }
+              </div>
+            </div>
+
+            <button
+              class="hour-btn"
+              [class.hour-btn--on]="!readOnly() && slot.state !== 'INACTIVE'"
+              [class.hour-btn--custom]="!readOnly() && slot.state === 'CUSTOM'"
+              (click)="onHourClick(slot)"
+              [disabled]="readOnly()"
+              [attr.aria-label]="'Heure ' + slot.hour + (slot.state !== 'INACTIVE' ? ' (actif)' : '')"
+              [attr.aria-pressed]="slot.state !== 'INACTIVE'"
+            >
+              {{ slot.hour }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+</div>

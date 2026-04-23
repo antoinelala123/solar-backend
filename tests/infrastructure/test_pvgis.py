@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import httpx
 
-from app.infrastructure.pvgis import fetch_hourly_irradiance, PVGISError
+from backend.infrastructure.pvgis import fetch_hourly_irradiance, PVGISError
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────

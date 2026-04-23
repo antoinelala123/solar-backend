@@ -4,13 +4,14 @@ from uuid import uuid4
 
 from fastapi import BackgroundTasks
 
-from app.application.services import (
+from backend.application.services import (
     create_project, get_project, list_projects, delete_project,
     create_charge, get_charge, update_charge, delete_charge,
-    _update_irradiance,
+    get_dimensioning, _update_irradiance,
+    ProjectData, ChargeData, DimensioningParams as ServiceDimensioningParams,
 )
-from app.api.schemas import ProjectCreate, ChargeCreate, HourlySlot, SlotState
-from app.infrastructure.pvgis import PVGISError
+from backend.api.schemas import ProjectCreate, HourlySlot, SlotState
+from backend.infrastructure.pvgis import PVGISError
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -33,14 +34,14 @@ def make_24_slots(state: SlotState = SlotState.INACTIVE) -> list[HourlySlot]:
     return [HourlySlot(hour=h, state=state) for h in range(24)]
 
 
-def make_charge_data(**kwargs):
+def make_charge_data(**kwargs) -> ChargeData:
     defaults = {
         "name": "Climatiseur",
         "max_power_w": 1500.0,
         "real_usage_rate": 0.8,
-        "hourly_slots": make_24_slots(),
+        "hourly_slots": [s.model_dump() for s in make_24_slots()],
     }
-    return ChargeCreate(**{**defaults, **kwargs})
+    return ChargeData(**{**defaults, **kwargs})
 
 
 # ── Tests create_project ───────────────────────────────────────────────────────
@@ -188,6 +189,58 @@ def test_update_charge_retourne_none_si_absent():
     result = update_charge(db, uuid4(), make_charge_data())
 
     assert result is None
+
+
+def make_params(**kwargs) -> ServiceDimensioningParams:
+    defaults = {"panel_peak_power_wp": 400.0, "battery_capacity_wh": 200.0, "battery_dod": 0.8}
+    return ServiceDimensioningParams(**{**defaults, **kwargs})
+
+
+# ── Tests get_dimensioning ─────────────────────────────────────────────────────
+
+def test_get_dimensioning_retourne_none_si_projet_absent():
+    db = make_db()
+    db.get.return_value = None
+
+    result = get_dimensioning(db, uuid4(), make_params())
+
+    assert result is None
+
+
+def test_get_dimensioning_leve_valueerror_si_irradiance_absente():
+    """Si PVGIS n'a pas encore répondu, on ne peut pas calculer."""
+    db = make_db()
+    fake_project = MagicMock()
+    fake_project.hourly_irradiance = None
+    db.get.return_value = fake_project
+
+    with pytest.raises(ValueError, match="irradiance"):
+        get_dimensioning(db, uuid4(), make_params())
+
+
+def test_get_dimensioning_retourne_un_dict_avec_les_bons_champs():
+    db = make_db()
+    fake_project = MagicMock()
+    fake_project.hourly_irradiance = [100.0] * 24
+    fake_project.charges = []
+    db.get.return_value = fake_project
+
+    result = get_dimensioning(db, uuid4(), make_params())
+
+    assert isinstance(result, dict)
+    assert result["recommended_panels"] >= 0
+    assert result["recommended_batteries"] >= 0
+
+
+def test_update_charge_utilise_for_update():
+    """La lecture doit verrouiller la ligne pour éviter les lost updates (accès concurrent par UUID partagé)."""
+    db = make_db()
+    db.get.return_value = MagicMock()
+
+    update_charge(db, uuid4(), make_charge_data())
+
+    call_kwargs = db.get.call_args[1]
+    assert call_kwargs.get("with_for_update") is True
 
 
 def test_update_charge_modifie_les_champs():

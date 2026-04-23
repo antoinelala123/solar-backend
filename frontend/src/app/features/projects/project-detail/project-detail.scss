@@ -1,0 +1,187 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px - 48px);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+
+  h1 {
+    margin: 0;
+    font-size: 1.4rem;
+  }
+
+  .coords {
+    font-size: 0.8rem;
+    color: #ba68c8;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &--ready {
+    background: #f3e5f5;
+    color: #6a1b9a;
+  }
+
+  &--pending {
+    background: #fce4ec;
+    color: #880e4f;
+  }
+}
+
+.body {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────── */
+
+.sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+
+  .add-btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+
+  mat-icon {
+    color: #ba68c8;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: #f9f0ff;
+  }
+
+  &--active {
+    background: #f3e5f5;
+
+    mat-icon {
+      color: #7b1fa2;
+    }
+  }
+
+  &--grow {
+    flex: 1;
+    width: auto;
+  }
+}
+
+.sidebar-item-row {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+
+  &:hover {
+    background: #f9f0ff;
+  }
+
+  .sidebar-item--grow:hover {
+    background: none;
+  }
+}
+
+.sidebar-item-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-item-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-item-sub {
+  font-size: 0.75rem;
+  color: #ba68c8;
+}
+
+.no-charges {
+  font-size: 0.85rem;
+  color: #ce93d8;
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* ── Zone graphe ─────────────────────────────────────── */
+
+.chart-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 4px;
+
+  h2 {
+    margin: 0 0 4px;
+  }
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.chart-hint {
+  font-size: 0.82rem;
+  color: #ba68c8;
+  margin: 0 0 20px;
+}
+
+.empty-hint {
+  color: #ce93d8;
+  text-align: center;
+  padding: 64px 0;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+}
