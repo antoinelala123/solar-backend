@@ -1,193 +1,113 @@
-# SolarDim — API de dimensionnement solaire
+# SolarDim
 
-API REST permettant de dimensionner une installation photovoltaïque (panneaux et batteries) à partir de charges électriques et de coordonnées GPS. L'irradiance est récupérée automatiquement via l'API PVGIS de la Commission Européenne.
-
----
-
-## Stack technique
-
-| Composant | Technologie |
-|---|---|
-| Backend | Python 3.11 + FastAPI |
-| Base de données | PostgreSQL 16 |
-| ORM | SQLAlchemy |
-| Migrations | Alembic |
-| Conteneurisation | Docker + Docker Compose |
-| Frontend (à venir) | Angular |
+Application web de dimensionnement d'installations photovoltaïques. L'utilisateur décrit ses charges électriques et ses coordonnées GPS ; l'application calcule le nombre de panneaux et de batteries nécessaires en s'appuyant sur les données d'irradiance solaire réelles fournies par l'API PVGIS de la Commission Européenne.
 
 ---
 
-## Architecture
+## Stack
 
-Le projet suit les principes de la **Clean Architecture** — les dépendances vont uniquement vers l'intérieur.
+| Composant        | Technologie                        |
+|------------------|------------------------------------|
+| Backend          | Python 3.11 · FastAPI · SQLAlchemy |
+| Base de données  | PostgreSQL 16                      |
+| Frontend         | Angular 21 · SSR                   |
+| Reverse proxy    | Nginx                              |
+| Conteneurisation | Docker · Docker Compose            |
+
+---
+
+## Architecture des services
 
 ```
-app/
-├── domain/           Cœur métier — modèles et calculs (aucune dépendance externe)
-│   ├── models.py     Entités SQLAlchemy : Project, Charge
-│   └── calculator.py Algorithme de dimensionnement solaire
-│
-├── application/      Orchestration — cas d'usage et accès aux données
-│   └── services.py   CRUD projets/charges, simulation, appel PVGIS en background
-│
-├── infrastructure/   Adaptateurs vers l'extérieur
-│   ├── database.py   Connexion SQLAlchemy + session
-│   └── pvgis.py      Client HTTP vers l'API PVGIS
-│
-└── api/              Couche HTTP
-    ├── main.py       Point d'entrée FastAPI, CORS, routeurs
-    ├── schemas.py    Schémas Pydantic (validation I/O)
-    └── routes/       Endpoints REST
-        ├── projects.py
-        └── charges.py
+┌─────────────────────────────────────────────┐
+│  Navigateur                                 │
+│  localhost/           → Angular (SPA)       │
+│  localhost/api/*      → FastAPI             │
+└──────────────┬──────────────────────────────┘
+               │ :80
+        ┌──────▼──────┐
+        │   nginx     │  (frontend)
+        │  port 80    │
+        └──────┬──────┘
+               │ proxy /api/ → :8000
+        ┌──────▼──────┐      ┌──────────┐
+        │   FastAPI   │──────│ Postgres │
+        │  port 8000  │      │ port 5432│
+        └─────────────┘      └──────────┘
 ```
 
----
-
-## Modèles de données
-
-**Project**
-| Champ | Type | Description |
-|---|---|---|
-| `id` | UUID | Clé d'accès partageable (pas d'authentification) |
-| `name` | string | Nom du projet |
-| `gps_lat` | float | Latitude (-90 à 90) |
-| `gps_lon` | float | Longitude (-180 à 180) |
-| `hourly_irradiance` | JSON | 24 valeurs W/m² moyennes par heure (rempli via PVGIS) |
-| `created_at` | datetime | Date de création |
-
-**Charge**
-| Champ | Type | Description |
-|---|---|---|
-| `id` | UUID | Identifiant |
-| `project_id` | UUID | Référence au projet |
-| `name` | string | Nom de l'appareil |
-| `max_power_w` | float | Puissance nominale (W) |
-| `real_usage_rate` | float | Taux d'usage réel (0.0 → 1.0) |
-| `hourly_slots` | JSON | 24 créneaux `{hour, state, custom_value_w}` |
-
-États d'un créneau : `INACTIVE` · `ACTIVE` · `CUSTOM`
+> Le port 8000 (API) n'est pas exposé sur la machine hôte — tout passe par nginx.
 
 ---
 
-## Prérequis
+## Démarrage rapide
 
-- [Docker](https://docs.docker.com/get-docker/) et Docker Compose
+**Prérequis** : Docker et Docker Compose.
 
----
-
-## Installation
-
-**1. Cloner le dépôt**
 ```bash
-git clone <url-du-repo>
-cd solar-backend
-```
+# 1. Cloner le dépôt
+git clone <url-du-repo> && cd solarDim
 
-**2. Créer le fichier d'environnement**
-```bash
+# 2. Créer le fichier d'environnement
 cp .env.example .env
-```
 
-Le fichier `.env` par défaut fonctionne tel quel pour le développement local.
+# 3. Lancer la stack complète (build inclus)
+docker compose up --build -d
 
----
-
-## Lancement
-
-**Démarrer la base de données et l'API**
-```bash
-docker compose up db api
-```
-
-**Appliquer les migrations (premier lancement ou après modification du schéma)**
-```bash
+# 4. Appliquer les migrations (premier lancement)
 docker compose run --rm migrate
 ```
 
-L'API est disponible sur `http://localhost:8000`
-La documentation Swagger est disponible sur `http://localhost:8000/docs`
+| URL                           | Description           |
+|-------------------------------|-----------------------|
+| `http://localhost`            | Application Angular   |
+| `http://localhost/api/health` | Santé de l'API        |
+| `http://localhost/api/docs`   | Documentation Swagger |
 
 ---
 
-## Endpoints
-
-### Projets
-
-| Méthode | URL | Description |
-|---|---|---|
-| `POST` | `/projects` | Créer un projet (récupère l'irradiance PVGIS en arrière-plan) |
-| `GET` | `/projects` | Lister tous les projets |
-| `GET` | `/projects/{id}` | Récupérer un projet avec ses charges |
-| `DELETE` | `/projects/{id}` | Supprimer un projet |
-| `GET` | `/projects/{id}/dimensioning` | Calculer le dimensionnement |
-
-### Charges
-
-| Méthode | URL | Description |
-|---|---|---|
-| `POST` | `/projects/{id}/charges` | Ajouter une charge à un projet |
-| `GET` | `/charges/{id}` | Récupérer une charge |
-| `PUT` | `/charges/{id}` | Mettre à jour une charge |
-| `DELETE` | `/charges/{id}` | Supprimer une charge |
-
-### Dimensionnement
+## Structure du dépôt
 
 ```
-GET /projects/{id}/dimensioning
-    ?panel_peak_power_wp=400    # Puissance crête d'un panneau (Wc)
-    &battery_capacity_wh=200    # Capacité d'une batterie (Wh)
-    &battery_dod=0.8            # Profondeur de décharge (0.0 → 1.0)
+solarDim/
+├── backend/           Code source Python (Clean Architecture)
+├── frontend/          Application Angular
+├── tests/             Tests d'intégration
+├── alembic/           Migrations de base de données
+├── docker-compose.yml
+├── Dockerfile         Image du backend
+└── .env.example       Variables d'environnement à copier
 ```
 
-Réponse :
-```json
-{
-  "recommended_panels": 3,
-  "recommended_batteries": 2,
-  "daily_load_wh": 4800.0,
-  "daily_solar_wh": 5100.0,
-  "energy_wasted_wh_per_day": 120.0,
-  "energy_deficit_wh_per_day": 0.0,
-  "is_oversized": false
-}
-```
-
-> **Note :** `hourly_irradiance` est `null` immédiatement après la création d'un projet — l'appel PVGIS s'effectue en arrière-plan (10-30 secondes). Le dimensionnement retourne `409` tant que l'irradiance n'est pas disponible.
+Chaque sous-dossier contient son propre README détaillé.
 
 ---
 
-## Tests
+## Commandes utiles
 
 ```bash
-# Lancer tous les tests
+# Rebuild et redémarrer un service spécifique
+docker compose up --build -d frontend
+docker compose up --build -d api
+
+# Voir les logs en temps réel
+docker compose logs -f
+
+# Lancer les tests backend
 docker compose run --rm test
 
-# Rebuild avant de lancer (après modification du code)
-docker compose run --rm --build test
-```
-
-Les tests sont organisés par couche :
-```
-tests/
-├── domain/           Tests du calculator (calculs purs, sans mock)
-├── application/      Tests des services (DB mockée)
-└── api/              Tests des routes HTTP (TestClient + services mockés)
-```
-
----
-
-## Développement
-
-**Générer une migration après modification d'un modèle**
-```bash
+# Générer une migration après modification d'un modèle
 docker compose run --rm migrate alembic revision --autogenerate -m "description"
 docker compose run --rm migrate
 ```
 
-**Variables d'environnement**
+---
 
-| Variable | Défaut | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://solar:solar@db:5432/solardb` | URL de connexion PostgreSQL |
-| `CORS_ORIGINS` | `http://localhost:4200` | Origines autorisées (séparées par des virgules) |
+## Variables d'environnement
+
+Copier `.env.example` en `.env` et adapter si besoin.
+
+| Variable        | Défaut                                     | Description                                              |
+|-----------------|--------------------------------------------|----------------------------------------------------------|
+| `DATABASE_URL`  | `postgresql://solar:solar@db:5432/solardb` | Connexion PostgreSQL                                     |
+| `CORS_ORIGINS`  | `http://localhost`                         | Origines autorisées par le backend (séparées par virgule)|

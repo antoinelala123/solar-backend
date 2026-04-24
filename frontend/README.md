@@ -1,59 +1,110 @@
-# Frontend
+# SolarDim — Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.8.
+Application Angular 21 pour le dimensionnement d'installations photovoltaïques. L'interface permet de gérer des projets, de décrire des charges électriques heure par heure et d'afficher le résultat du dimensionnement sous forme de graphiques.
 
-## Development server
+---
 
-To start a local development server, run:
+## Stack
 
-```bash
-ng serve
+| Composant       | Technologie                        |
+|-----------------|------------------------------------|
+| Framework       | Angular 21 (standalone components) |
+| Rendu           | SSR activé (`@angular/ssr`)        |
+| Tests           | Vitest                             |
+| Serveur de prod | Nginx (via Docker)                 |
+
+---
+
+## Pages et routes
+
+| Route                        | Composant                 | Description                                        |
+|------------------------------|---------------------------|----------------------------------------------------|
+| `/`                          | → redirect                | Redirige vers `/projects`                          |
+| `/projects`                  | `ProjectListComponent`    | Liste de tous les projets                          |
+| `/projects/:id`              | `ProjectDetailComponent`  | Détail d'un projet — charges et créneaux horaires  |
+| `/projects/:id/dimensioning` | `DimensioningComponent`   | Résultat du dimensionnement avec graphique         |
+
+---
+
+## Architecture
+
+```
+src/app/
+├── core/
+│   ├── models/           Interfaces TypeScript (Project, Charge, DimensioningResult…)
+│   └── services/         Services HTTP injectables (ProjectService, ChargeService)
+│
+├── features/
+│   ├── projects/         Pages et composants liés aux projets
+│   │   ├── project-list/           Liste des projets
+│   │   ├── project-detail/         Détail projet + charges
+│   │   ├── create-project-dialog/  Formulaire de création
+│   │   ├── create-charge-dialog/   Formulaire d'ajout de charge
+│   │   ├── custom-value-dialog/    Saisie de valeur personnalisée
+│   │   └── hourly-chart/           Graphique de consommation horaire
+│   │
+│   └── dimensioning/     Page de résultat
+│       ├── dimensioning/     Composant principal (paramètres + résultat)
+│       └── energy-chart/     Graphique d'énergie
+│
+├── app.routes.ts         Définition des routes (lazy-loaded)
+└── app.config.ts         Configuration Angular (HttpClient, Router…)
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Les composants utilisent **Signals** pour la gestion d'état et `ChangeDetectionStrategy.OnPush`.
 
-## Code scaffolding
+---
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Communication avec le backend
+
+Tous les appels API passent par le préfixe `/api/` :
+
+| Service           | Méthodes                                             | Endpoints appelés                                  |
+|-------------------|------------------------------------------------------|----------------------------------------------------|
+| `ProjectService`  | `list`, `get`, `create`, `delete`, `getDimensioning` | `/api/projects/*`                                  |
+| `ChargeService`   | `create`, `update`, `delete`                         | `/api/projects/:id/charges`, `/api/charges/:id`    |
+
+En développement local, un proxy (`proxy.conf.json`) redirige `/api/` vers `http://localhost:8000/`.
+En Docker, nginx proxifie `/api/` vers le container `api`.
+
+---
+
+## Développement local
+
+**Prérequis** : Node.js 20, npm.
 
 ```bash
-ng generate component component-name
+cd frontend
+npm install
+
+# Lancer le backend en parallèle (nécessaire pour les appels API)
+docker compose up -d db migrate api
+
+# Lancer le serveur de développement (avec proxy vers l'API)
+npm start          # ou : ng serve
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+L'application est accessible sur `http://localhost:4200`.
+
+---
+
+## Build et Docker
 
 ```bash
-ng generate --help
+# Build de production (génère dist/frontend/browser/ et dist/frontend/server/)
+npm run build
+
+# Rebuild le container Docker frontend
+docker compose up --build -d frontend
 ```
 
-## Building
+> Le build Angular avec SSR génère `index.csr.html` (et non `index.html`).
+> Le `nginx.conf` est configuré en conséquence.
 
-To build the project run:
+---
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Tests
 
 ```bash
 ng test
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

@@ -88,6 +88,38 @@
   margin-top: 2px;
 }
 
+/* Input + colonne de boutons ↑↓ à droite */
+.override-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.step-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.step-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #9c27b0;
+  border-radius: 3px;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: rgba(156, 39, 176, 0.1); }
+  &:disabled { color: #ccc; cursor: default; }
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; line-height: 20px; }
+}
+
 /* Input intégré dans la card (panneaux / batteries) */
 .override-input {
   font-size: 1.3rem;

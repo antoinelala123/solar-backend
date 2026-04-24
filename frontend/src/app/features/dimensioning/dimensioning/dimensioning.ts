@@ -115,6 +115,16 @@ export class DimensioningComponent implements OnInit {
     this.overrideBatteries.setValue(r.recommended_batteries);
   }
 
+  stepPanels(delta: number): void {
+    const next = Math.max(0, (this.overridePanels.value ?? 0) + delta);
+    this.overridePanels.setValue(next);
+  }
+
+  stepBatteries(delta: number): void {
+    const next = Math.max(0, (this.overrideBatteries.value ?? 0) + delta);
+    this.overrideBatteries.setValue(next);
+  }
+
   private subscribeToParamChanges() {
     this.form.valueChanges.pipe(
       debounceTime(600),
