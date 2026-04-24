@@ -1,4 +1,5 @@
 import pytest
+from backend.domain.entities import HourlySlot
 from backend.domain.calculator import (
     _load_at_hour,
     _find_min_panels,
@@ -21,16 +22,16 @@ def make_charge(max_power_w: float, real_usage_rate: float, slots: list[dict]):
     return c
 
 
-def make_slots(active_hours: list[int] = [], custom: dict[int, float] = {}) -> list[dict]:
+def make_slots(active_hours: list[int] = [], custom: dict[int, float] = {}) -> list[HourlySlot]:
     """Génère 24 slots : ACTIVE sur active_hours, CUSTOM sur custom, INACTIVE ailleurs."""
     slots = []
     for h in range(24):
         if h in custom:
-            slots.append({"hour": h, "state": "CUSTOM", "custom_value_w": custom[h]})
+            slots.append(HourlySlot(hour=h, state="CUSTOM", custom_value_w=custom[h]))
         elif h in active_hours:
-            slots.append({"hour": h, "state": "ACTIVE", "custom_value_w": None})
+            slots.append(HourlySlot(hour=h, state="ACTIVE", custom_value_w=None))
         else:
-            slots.append({"hour": h, "state": "INACTIVE", "custom_value_w": None})
+            slots.append(HourlySlot(hour=h, state="INACTIVE", custom_value_w=None))
     return slots
 
 
@@ -96,7 +97,7 @@ def test_find_min_batteries_retourne_au_moins_1():
     charge = make_charge(100.0, 1.0, make_slots(active_hours=[12]))  # 100 Wh à midi
     irr = flat_irradiance(1000.0)  # soleil toute la journée
     # 1 panneau de 400 Wp produit 400 Wh à midi → largement suffisant
-    result = _find_min_batteries([charge], irr, 1, 400.0, 200.0, 0.8)
+    result = _find_min_batteries([charge], irr, 1, 400.0, 200.0, 0.8, 0.8)
     assert result >= 1
 
 
@@ -106,7 +107,7 @@ def test_find_min_batteries_couvre_deficit_nuit():
     charge = make_charge(500.0, 1.0, make_slots(active_hours=[20, 21]))
     irr = [0.0] * 24  # aucun soleil (cas extrême)
     # usable = 200 Wh × 0.8 = 160 Wh → besoin 1000 Wh → 7 batteries
-    result = _find_min_batteries([charge], irr, 0, 400.0, 200.0, 0.8)
+    result = _find_min_batteries([charge], irr, 0, 400.0, 200.0, 0.8, 0.8)
     assert result == 7  # ceil(1000 / 160)
 
 
@@ -119,7 +120,7 @@ def test_simulate_systeme_equilibre_pas_de_perte():
     charge = make_charge(100.0, 1.0, make_slots(active_hours=list(range(24))))
     irr = flat_irradiance(1000.0)
 
-    wasted, deficit = _simulate_30_days([charge], irr, 1, 1, 100.0, 5000.0, 1.0)
+    wasted, deficit = _simulate_30_days([charge], irr, 1, 1, 100.0, 5000.0, 1.0, 1.0)
 
     assert wasted == pytest.approx(0.0, abs=1.0)
     assert deficit == pytest.approx(0.0, abs=1.0)
@@ -130,7 +131,7 @@ def test_simulate_surdimensionne_produit_des_pertes():
     charge = make_charge(50.0, 1.0, make_slots(active_hours=[12]))  # 50 Wh/jour
     irr = solar_irradiance_profile()
 
-    wasted, deficit = _simulate_30_days([charge], irr, 10, 1, 400.0, 200.0, 0.8)
+    wasted, deficit = _simulate_30_days([charge], irr, 10, 1, 400.0, 200.0, 0.8, 0.8)
 
     assert wasted > 0
 
@@ -140,7 +141,7 @@ def test_simulate_sous_dimensionne_produit_des_deficits():
     charge = make_charge(2000.0, 1.0, make_slots(active_hours=list(range(24))))
     irr = [0.0] * 24  # pas de soleil
 
-    wasted, deficit = _simulate_30_days([charge], irr, 0, 1, 200.0, 0.8, 1.0)
+    wasted, deficit = _simulate_30_days([charge], irr, 0, 1, 200.0, 0.8, 1.0, 1.0)
 
     assert deficit > 0
 
@@ -151,7 +152,7 @@ def test_compute_dimensioning_retourne_structure_complete():
     charge = make_charge(200.0, 0.8, make_slots(active_hours=[8, 9, 18, 19]))
     irr = solar_irradiance_profile()
 
-    result = compute_dimensioning([charge], irr, 400.0, 200.0, 0.8)
+    result = compute_dimensioning([charge], irr, 400.0, 200.0, 0.8, 0.8)
 
     assert "recommended_panels" in result
     assert "recommended_batteries" in result
@@ -163,7 +164,7 @@ def test_compute_dimensioning_retourne_structure_complete():
 
 
 def test_compute_dimensioning_sans_charge():
-    result = compute_dimensioning([], solar_irradiance_profile(), 400.0, 200.0, 0.8)
+    result = compute_dimensioning([], solar_irradiance_profile(), 400.0, 200.0, 0.8, 0.8)
     assert result["recommended_panels"] == 0
     assert result["daily_load_wh"] == 0.0
 
@@ -173,7 +174,7 @@ def test_compute_dimensioning_is_oversized_si_beaucoup_de_perte():
     charge = make_charge(50.0, 1.0, make_slots(active_hours=[12]))
     irr = solar_irradiance_profile()
 
-    result = compute_dimensioning([charge], irr, 10_000.0, 200.0, 0.8)
+    result = compute_dimensioning([charge], irr, 10_000.0, 200.0, 0.8, 0.8)
 
     assert result["is_oversized"] is True
     assert result["energy_wasted_wh_per_day"] > 0
@@ -187,7 +188,7 @@ def test_compute_dimensioning_not_oversized_si_bien_dimensionne():
     charge = make_charge(100.0, 1.0, make_slots(active_hours=list(range(24))))
     irr = solar_irradiance_profile()
 
-    result = compute_dimensioning([charge], irr, 400.0, 2000.0, 0.8)
+    result = compute_dimensioning([charge], irr, 400.0, 2000.0, 0.8, 1.0)
 
     assert result["is_oversized"] is False
 
@@ -197,6 +198,6 @@ def test_compute_daily_load_est_correct():
     charge = make_charge(500.0, 0.8, make_slots(active_hours=[10, 14]))
     irr = solar_irradiance_profile()
 
-    result = compute_dimensioning([charge], irr, 400.0, 200.0, 0.8)
+    result = compute_dimensioning([charge], irr, 400.0, 200.0, 0.8, 0.8)
 
     assert result["daily_load_wh"] == pytest.approx(800.0)

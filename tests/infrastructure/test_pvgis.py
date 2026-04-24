@@ -36,7 +36,7 @@ def test_retourne_exactement_24_valeurs():
     """Le résultat doit toujours contenir 24 éléments (heures 0 à 23)."""
     data = [{"time": f"20050101:{h:02d}10", "G(i)": float(h * 10)} for h in range(24)]
 
-    with patch("app.infrastructure.pvgis.httpx.get") as mock_get:
+    with patch("backend.infrastructure.pvgis.httpx.get") as mock_get:
         mock_get.return_value = make_response(data)
         result = fetch_hourly_irradiance(48.85, 2.35)
 
@@ -55,7 +55,7 @@ def test_moyenne_calculee_correctement():
         if h not in heures_presentes:
             data.append({"time": f"20050101:{h:02d}10", "G(i)": 0.0})
 
-    with patch("app.infrastructure.pvgis.httpx.get") as mock_get:
+    with patch("backend.infrastructure.pvgis.httpx.get") as mock_get:
         mock_get.return_value = make_response(data)
         result = fetch_hourly_irradiance(48.85, 2.35)
 
@@ -67,7 +67,7 @@ def test_valeurs_nulles_la_nuit():
     """Les heures nocturnes doivent avoir une irradiance de 0."""
     data = [{"time": f"20050101:{h:02d}10", "G(i)": 0.0} for h in range(24)]
 
-    with patch("app.infrastructure.pvgis.httpx.get") as mock_get:
+    with patch("backend.infrastructure.pvgis.httpx.get") as mock_get:
         mock_get.return_value = make_response(data)
         result = fetch_hourly_irradiance(48.85, 2.35)
 
@@ -83,7 +83,7 @@ def test_valeurs_arrondies_a_2_decimales():
         if h != 10:
             data.append({"time": f"20050101:{h:02d}10", "G(i)": 0.0})
 
-    with patch("app.infrastructure.pvgis.httpx.get") as mock_get:
+    with patch("backend.infrastructure.pvgis.httpx.get") as mock_get:
         mock_get.return_value = make_response(data)
         result = fetch_hourly_irradiance(48.85, 2.35)
 
@@ -94,7 +94,7 @@ def test_valeurs_arrondies_a_2_decimales():
 
 def test_timeout_leve_pvgis_error():
     """Un timeout réseau doit lever PVGISError, pas une exception httpx brute."""
-    with patch("app.infrastructure.pvgis.httpx.get") as mock_get:
+    with patch("backend.infrastructure.pvgis.httpx.get") as mock_get:
         mock_get.side_effect = httpx.TimeoutException("timeout")
 
         with pytest.raises(PVGISError, match="délais"):
@@ -109,7 +109,7 @@ def test_erreur_http_leve_pvgis_error():
         "bad request", request=MagicMock(), response=mock_response
     )
 
-    with patch("app.infrastructure.pvgis.httpx.get") as mock_get:
+    with patch("backend.infrastructure.pvgis.httpx.get") as mock_get:
         mock_get.return_value = mock_response
 
         with pytest.raises(PVGISError, match="HTTP 400"):
@@ -122,7 +122,7 @@ def test_json_invalide_leve_pvgis_error():
     mock_response.raise_for_status.return_value = None
     mock_response.json.return_value = {"unexpected": "structure"}
 
-    with patch("app.infrastructure.pvgis.httpx.get") as mock_get:
+    with patch("backend.infrastructure.pvgis.httpx.get") as mock_get:
         mock_get.return_value = mock_response
 
         with pytest.raises(PVGISError, match="inattendue"):
@@ -131,7 +131,7 @@ def test_json_invalide_leve_pvgis_error():
 
 def test_erreur_reseau_leve_pvgis_error():
     """Une erreur réseau générique doit lever PVGISError."""
-    with patch("app.infrastructure.pvgis.httpx.get") as mock_get:
+    with patch("backend.infrastructure.pvgis.httpx.get") as mock_get:
         mock_get.side_effect = httpx.RequestError("connection refused")
 
         with pytest.raises(PVGISError, match="joindre PVGIS"):
