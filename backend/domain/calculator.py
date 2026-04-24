@@ -3,11 +3,11 @@ import math
 
 def _load_at_hour(charge, hour: int) -> float:
     """Consommation réelle en Wh d'une charge à une heure donnée."""
-    slot = next((s for s in charge.hourly_slots if s["hour"] == hour), None)
-    if slot is None or slot["state"] == "INACTIVE":
+    slot = next((s for s in charge.hourly_slots if s.hour == hour), None)
+    if slot is None or slot.state == "INACTIVE":
         return 0.0
-    if slot["state"] == "CUSTOM":
-        return slot.get("custom_value_w") or 0.0
+    if slot.state == "CUSTOM":
+        return slot.custom_value_w or 0.0
     # ACTIVE : puissance nominale × taux d'usage réel
     return charge.max_power_w * charge.real_usage_rate
 

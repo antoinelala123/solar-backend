@@ -13,7 +13,7 @@ if config.config_file_name is not None:
 
 # On importe Base + tous les modèles pour que l'autogénération les détecte
 from backend.infrastructure.database import Base
-import backend.domain.models  # noqa: F401
+import backend.infrastructure.models  # noqa: F401
 
 target_metadata = Base.metadata
 
